@@ -38,6 +38,14 @@
 #include "TPCFastTransform.h"
 #include "DataFormatsTPC/PIDResponse.h"
 
+//add for 3body check
+#include "SimulationDataFormat/MCEventLabel.h"
+#include "SimulationDataFormat/MCCompLabel.h"
+#include "CommonUtils/TreeStream.h"
+#include "CommonUtils/TreeStreamRedirector.h"
+#include <TTree.h>
+#include <TFile.h>
+
 namespace o2
 {
 namespace tpc
@@ -153,9 +161,11 @@ class SVertexer
  private:
   template <class TVI, class TCI, class T3I, class TR>
   void extractPVReferences(const TVI& v0s, TR& vtx2V0Refs, const TCI& cascades, TR& vtx2CascRefs, const T3I& vtxs3, TR& vtx2body3Refs);
-  bool checkV0(const TrackCand& seed0, const TrackCand& seed1, int iP, int iN, int ithread);
+  //bool checkV0(const TrackCand& seed0, const TrackCand& seed1, int iP, int iN, int ithread);
+  bool checkV0(const o2::globaltracking::RecoContainer& recoData, const TrackCand& seed0, const TrackCand& seed1, int iP, int iN, int ithread); // for 3body debug
   int checkCascades(const V0Index& v0Idx, const V0& v0, float rv0, std::array<float, 3> pV0, float p2V0, int avoidTrackID, int posneg, VBracket v0vlist, int ithread);
-  int check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, std::array<float, 3> pV0, float p2V0, int avoidTrackID, int posneg, VBracket v0vlist, int ithread);
+  //int check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, std::array<float, 3> pV0, float p2V0, int avoidTrackID, int posneg, VBracket v0vlist, int ithread);
+  int check3bodyDecays(const o2::globaltracking::RecoContainer& recoData, const V0Index& v0Idx, const V0& v0, float rv0, std::array<float, 3> pV0, float p2V0, int avoidTrackID, int posneg, VBracket v0vlist, int ithread); // for 3body debug
   void setupThreads();
   void buildT2V(const o2::globaltracking::RecoContainer& recoTracks);
   void updateTimeDependentParams();
@@ -224,6 +234,9 @@ class SVertexer
   bool mEnableCascades = true;
   bool mEnable3BodyDecays = false;
   bool mUseMC = false;
+
+  //For Debug
+  std::unique_ptr<o2::utils::TreeStreamRedirector> svDebug;
 };
 
 } // namespace vertexing
