@@ -147,6 +147,10 @@ void CcdbApi::init(std::string const& host)
   // In addition, we can monitor exactly which objects are fetched and what is their content.
   // One can also distribute so obtained caches to sites without network access.
   //
+  // THE INFORMATION BELOW IS TEMPORARILY WRONG: the functionality of checking the validity if IGNORE_VALIDITYCHECK_OF_CCDB_LOCALCACHE
+  // is NOT set is broken. At the moment the code is modified to behave as if the IGNORE_VALIDITYCHECK_OF_CCDB_LOCALCACHE is always set
+  // whenever the ALICEO2_CCDB_LOCALCACHE is defined.
+  //
   // When used with the DPL CCDB fetcher (i.e. loadFileToMemory is called), in order to prefer the available snapshot w/o its validity
   // check an extra variable IGNORE_VALIDITYCHECK_OF_CCDB_LOCALCACHE must be defined, otherwhise the object will be fetched from the
   // server after the validity check and new snapshot will be created if needed
@@ -161,7 +165,7 @@ void CcdbApi::init(std::string const& host)
     }
     snapshotReport = fmt::format("(cache snapshots to dir={}", mSnapshotCachePath);
   }
-  if (getenv("IGNORE_VALIDITYCHECK_OF_CCDB_LOCALCACHE")) {
+  if (cachedir) { // || getenv("IGNORE_VALIDITYCHECK_OF_CCDB_LOCALCACHE")) {
     mPreferSnapshotCache = true;
     if (mSnapshotCachePath.empty()) {
       LOGP(fatal, "IGNORE_VALIDITYCHECK_OF_CCDB_LOCALCACHE is defined but the ALICEO2_CCDB_LOCALCACHE is not");
@@ -252,6 +256,10 @@ int CcdbApi::storeAsTFile_impl(const void* obj, std::type_info const& tinfo, std
                                std::vector<char>::size_type maxSize) const
 {
   // We need the TClass for this type; will verify if dictionary exists
+  if (!obj) {
+    LOGP(error, "nullptr is provided for object {}/{}/{}", path, startValidityTimestamp, endValidityTimestamp);
+    return -1;
+  }
   CcdbObjectInfo info;
   auto img = createObjectImage(obj, tinfo, &info);
   return storeAsBinaryFile(img->data(), img->size(), info.getFileName(), info.getObjectType(),
@@ -372,6 +380,10 @@ int CcdbApi::storeAsTFile(const TObject* rootObject, std::string const& path, st
                           long startValidityTimestamp, long endValidityTimestamp, std::vector<char>::size_type maxSize) const
 {
   // Prepare file
+  if (!rootObject) {
+    LOGP(error, "nullptr is provided for object {}/{}/{}", path, startValidityTimestamp, endValidityTimestamp);
+    return -1;
+  }
   CcdbObjectInfo info;
   auto img = createObjectImage(rootObject, &info);
   return storeAsBinaryFile(img->data(), img->size(), info.getFileName(), info.getObjectType(), path, metadata, startValidityTimestamp, endValidityTimestamp, maxSize);
@@ -820,6 +832,9 @@ void* CcdbApi::extractFromLocalFile(std::string const& filename, std::type_info 
     if ((isSnapshotMode() || mPreferSnapshotCache) && headers->find("ETag") == headers->end()) { // generate dummy ETag to profit from the caching
       (*headers)["ETag"] = filename;
     }
+    if (headers->find("fileSize") == headers->end()) {
+      (*headers)["fileSize"] = fmt::format("{}", f.GetEND());
+    }
   }
   return extractFromTFile(f, tcl);
 }
@@ -845,7 +860,7 @@ bool CcdbApi::initTGrid() const
   return mAlienInstance != nullptr;
 }
 
-void* CcdbApi::downloadFilesystemContent(std::string const& url, std::type_info const& tinfo) const
+void* CcdbApi::downloadFilesystemContent(std::string const& url, std::type_info const& tinfo, std::map<string, string>* headers) const
 {
   if ((url.find("alien:/", 0) != std::string::npos) && !initTGrid()) {
     return nullptr;
@@ -855,6 +870,9 @@ void* CcdbApi::downloadFilesystemContent(std::string const& url, std::type_info 
   if (memfile) {
     auto cl = tinfo2TClass(tinfo);
     auto content = extractFromTFile(*memfile, cl);
+    if (headers && headers->find("fileSize") == headers->end()) {
+      (*headers)["fileSize"] = fmt::format("{}", memfile->GetEND());
+    }
     delete memfile;
     return content;
   }
@@ -890,7 +908,7 @@ void* CcdbApi::navigateURLsAndRetrieveContent(CURL* curl_handle, std::string con
 
   // let's see first of all if the url is something specific that curl cannot handle
   if ((url.find("alien:/", 0) != std::string::npos) || (url.find("file:/", 0) != std::string::npos)) {
-    return downloadFilesystemContent(url, tinfo);
+    return downloadFilesystemContent(url, tinfo, headers);
   }
   // add other final cases here
   // example root://
@@ -921,6 +939,9 @@ void* CcdbApi::navigateURLsAndRetrieveContent(CURL* curl_handle, std::string con
     if (200 <= response_code && response_code < 300) {
       // good response and the content is directly provided and should have been dumped into "chunk"
       content = interpretAsTMemFileAndExtract(chunk.memory, chunk.size, tinfo);
+      if (headers && headers->find("fileSize") == headers->end()) {
+        (*headers)["fileSize"] = fmt::format("{}", chunk.size);
+      }
     } else if (response_code == 304) {
       // this means the object exist but I am not serving
       // it since it's already in your possession
@@ -1486,12 +1507,6 @@ void CcdbApi::scheduleDownload(RequestContext& requestContext, size_t* requestCo
   auto data = new DownloaderRequestData(); // Deleted in transferFinished of CCDBDownloader.cxx
   data->hoPair.object = &requestContext.dest;
 
-  auto signalError = [&chunk = requestContext.dest, &errorflag = data->errorflag]() {
-    chunk.clear();
-    chunk.reserve(1);
-    errorflag = true;
-  };
-
   std::function<bool(std::string)> localContentCallback = [this, &requestContext](std::string url) {
     return this->loadLocalContentToMemory(requestContext.dest, url);
   };
@@ -1683,9 +1698,9 @@ void CcdbApi::vectoredLoadFileToMemory(std::vector<RequestContext>& requestConte
   // Save snapshots
   for (int i = 0; i < requestContexts.size(); i++) {
     auto& requestContext = requestContexts.at(i);
-    logReading(requestContext.path, requestContext.timestamp, &requestContext.headers,
-               fmt::format("{}{}", requestContext.considerSnapshot ? "load to memory" : "retrieve", fromSnapshots.at(i) ? " from snapshot" : ""));
     if (!requestContext.dest.empty()) {
+      logReading(requestContext.path, requestContext.timestamp, &requestContext.headers,
+                 fmt::format("{}{}", requestContext.considerSnapshot ? "load to memory" : "retrieve", fromSnapshots.at(i) ? " from snapshot" : ""));
       if (requestContext.considerSnapshot && fromSnapshots.at(i) != 2) {
         saveSnapshot(requestContext);
       }
@@ -1766,6 +1781,9 @@ void CcdbApi::loadFileToMemory(o2::pmr::vector<char>& dest, const std::string& p
     }
     if ((isSnapshotMode() || mPreferSnapshotCache) && localHeaders->find("ETag") == localHeaders->end()) { // generate dummy ETag to profit from the caching
       (*localHeaders)["ETag"] = path;
+    }
+    if (localHeaders->find("fileSize") == localHeaders->end()) {
+      (*localHeaders)["fileSize"] = fmt::format("{}", memFile.GetEND());
     }
   }
   return;

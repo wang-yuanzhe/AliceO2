@@ -578,31 +578,22 @@ void handle_crash(int sig)
 {
   // dump demangled stack trace
   void* array[1024];
-
   int size = backtrace(array, 1024);
 
   {
-    char const* msg = "*** Program crashed (Segmentation fault, FPE, BUS, ABRT, KILL, Unhandled Exception, ...)\nBacktrace by DPL:\n";
-    auto retVal = write(STDERR_FILENO, msg, strlen(msg));
-    msg = "UNKNOWN SIGNAL\n";
-    if (sig == SIGSEGV) {
-      msg = "SEGMENTATION FAULT\n";
-    } else if (sig == SIGABRT) {
-      msg = "ABRT\n";
-    } else if (sig == SIGBUS) {
-      msg = "BUS ERROR\n";
-    } else if (sig == SIGILL) {
-      msg = "ILLEGAL INSTRUCTION\n";
-    } else if (sig == SIGFPE) {
+    char buffer[1024];
+    char const* msg = "*** Program crashed (%s)\nBacktrace by DPL:\n";
+    snprintf(buffer, 1024, msg, strsignal(sig));
+    if (sig == SIGFPE) {
       if (std::fetestexcept(FE_DIVBYZERO)) {
-        msg = "FLOATING POINT EXCEPTION (DIVISION BY ZERO)\n";
+        snprintf(buffer, 1024, msg, "FLOATING POINT EXCEPTION - DIVISION BY ZERO");
       } else if (std::fetestexcept(FE_INVALID)) {
-        msg = "FLOATING POINT EXCEPTION (INVALID RESULT)\n";
+        snprintf(buffer, 1024, msg, "FLOATING POINT EXCEPTION - INVALID RESULT");
       } else {
-        msg = "FLOATING POINT EXCEPTION (UNKNOWN REASON)\n";
+        snprintf(buffer, 1024, msg, "FLOATING POINT EXCEPTION - UNKNOWN REASON");
       }
     }
-    retVal = write(STDERR_FILENO, msg, strlen(msg));
+    auto retVal = write(STDERR_FILENO, buffer, strlen(buffer));
     (void)retVal;
   }
   demangled_backtrace_symbols(array, size, STDERR_FILENO);
@@ -655,6 +646,12 @@ void spawnDevice(uv_loop_t* loop,
   if (id == 0) {
     // We allow being debugged and do not terminate on SIGTRAP
     signal(SIGTRAP, SIG_IGN);
+    // We immediately ignore SIGUSR1 and SIGUSR2 so that we do not
+    // get killed by the parent trying to force stepping children.
+    // We will re-enable them later on, when it is actually safe to
+    // do so.
+    signal(SIGUSR1, SIG_IGN);
+    signal(SIGUSR2, SIG_IGN);
 
     // This is the child.
     // For stdout / stderr, we close the read part of the pipe, the
@@ -803,7 +800,7 @@ void processChildrenOutput(DriverInfo& driverInfo,
     }
 
     O2_SIGNPOST_ID_FROM_POINTER(sid, driver, &info);
-    O2_SIGNPOST_START(driver, sid, "bytes_processed", "bytes processed by " O2_ENG_TYPE(pid, "d"), info.pid);
+    O2_SIGNPOST_START(driver, sid, "bytes_processed", "bytes processed by %{xcode:pid}d", info.pid);
 
     std::string_view s = info.unprinted;
     size_t pos = 0;
@@ -851,7 +848,7 @@ void processChildrenOutput(DriverInfo& driverInfo,
     size_t oldSize = info.unprinted.size();
     info.unprinted = std::string(s);
     int64_t bytesProcessed = oldSize - info.unprinted.size();
-    O2_SIGNPOST_END(driver, sid, "bytes_processed", "bytes processed by " O2_ENG_TYPE(network - size - in - bytes, PRIi64), bytesProcessed);
+    O2_SIGNPOST_END(driver, sid, "bytes_processed", "bytes processed by %{xcode:network-size-in-bytes}" PRIi64, bytesProcessed);
   }
 }
 
@@ -864,10 +861,9 @@ bool processSigChild(DeviceInfos& infos, DeviceSpecs& specs)
     int status;
     pid_t pid = waitpid((pid_t)(-1), &status, WNOHANG);
     if (pid > 0) {
+      // Normal exit
       int es = WEXITSTATUS(status);
-
       if (WIFEXITED(status) == false || es != 0) {
-        es = WIFEXITED(status) ? es : 128 + es;
         // Look for the name associated to the pid in the infos
         std::string id = "unknown";
         assert(specs.size() == infos.size());
@@ -882,10 +878,13 @@ bool processSigChild(DeviceInfos& infos, DeviceSpecs& specs)
         } else if (forceful_exit) {
           LOGP(error, "pid {} ({}) was forcefully terminated after being requested to quit", pid, id);
         } else {
-          if (es == 128) {
-            LOGP(error, "Workflow crashed - pid {} ({}) was killed abnormally with exit code {}, could be out of memory killer, segfault, unhandled exception, SIGKILL, etc...", pid, id, es);
+          if (WIFSIGNALED(status)) {
+            int exitSignal = WTERMSIG(status);
+            es = exitSignal + 128;
+            LOGP(error, "Workflow crashed - PID {} ({}) was killed abnormally with {} and exited code was set to {}.", pid, id, strsignal(exitSignal), es);
           } else {
-            LOGP(error, "pid {} ({}) crashed with or was killed with exit code {}", pid, id, es);
+            es = 128;
+            LOGP(error, "Workflow crashed - PID {} ({}) did not exit correctly however it's not clear why. Exit code forced to {}.", pid, id, es);
           }
         }
         hasError |= true;

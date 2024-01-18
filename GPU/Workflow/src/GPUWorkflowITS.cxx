@@ -134,8 +134,8 @@ int GPURecoWorkflowSpec::runITSTracking(o2::framework::ProcessingContext& pc)
 
   auto rofsinput = pc.inputs().get<gsl::span<o2::itsmft::ROFRecord>>("ROframes");
 
-  auto& rofs = pc.outputs().make<std::vector<o2::itsmft::ROFRecord>>(Output{"ITS", "ITSTrackROF", 0, Lifetime::Timeframe}, rofsinput.begin(), rofsinput.end());
-  auto& irFrames = pc.outputs().make<std::vector<o2::dataformats::IRFrame>>(Output{"ITS", "IRFRAMES", 0, Lifetime::Timeframe});
+  auto& rofs = pc.outputs().make<std::vector<o2::itsmft::ROFRecord>>(Output{"ITS", "ITSTrackROF", 0}, rofsinput.begin(), rofsinput.end());
+  auto& irFrames = pc.outputs().make<std::vector<o2::dataformats::IRFrame>>(Output{"ITS", "IRFRAMES", 0});
   irFrames.reserve(rofs.size());
 
   const auto& alpParams = o2::itsmft::DPLAlpideParam<o2::detectors::DetID::ITS>::Instance(); // RS: this should come from CCDB
@@ -148,19 +148,19 @@ int GPURecoWorkflowSpec::runITSTracking(o2::framework::ProcessingContext& pc)
   if (mSpecConfig.processMC) {
     labels = pc.inputs().get<const dataformats::MCTruthContainer<MCCompLabel>*>("itsmclabels").release();
     // get the array as read-only span, a snapshot is sent forward
-    pc.outputs().snapshot(Output{"ITS", "ITSTrackMC2ROF", 0, Lifetime::Timeframe}, pc.inputs().get<gsl::span<itsmft::MC2ROFRecord>>("ITSMC2ROframes"));
+    pc.outputs().snapshot(Output{"ITS", "ITSTrackMC2ROF", 0}, pc.inputs().get<gsl::span<itsmft::MC2ROFRecord>>("ITSMC2ROframes"));
     LOG(info) << labels->getIndexedSize() << " MC label objects , in " << mc2rofs.size() << " MC events";
   }
 
-  auto& allClusIdx = pc.outputs().make<std::vector<int>>(Output{"ITS", "TRACKCLSID", 0, Lifetime::Timeframe});
-  auto& allTracks = pc.outputs().make<std::vector<o2::its::TrackITS>>(Output{"ITS", "TRACKS", 0, Lifetime::Timeframe});
-  auto& vertROFvec = pc.outputs().make<std::vector<o2::itsmft::ROFRecord>>(Output{"ITS", "VERTICESROF", 0, Lifetime::Timeframe});
-  auto& vertices = pc.outputs().make<std::vector<Vertex>>(Output{"ITS", "VERTICES", 0, Lifetime::Timeframe});
+  auto& allClusIdx = pc.outputs().make<std::vector<int>>(Output{"ITS", "TRACKCLSID", 0});
+  auto& allTracks = pc.outputs().make<std::vector<o2::its::TrackITS>>(Output{"ITS", "TRACKS", 0});
+  auto& vertROFvec = pc.outputs().make<std::vector<o2::itsmft::ROFRecord>>(Output{"ITS", "VERTICESROF", 0});
+  auto& vertices = pc.outputs().make<std::vector<Vertex>>(Output{"ITS", "VERTICES", 0});
 
   // MC
   static pmr::vector<o2::MCCompLabel> dummyMCLabTracks, dummyMCLabVerts;
-  auto& allTrackLabels = mSpecConfig.processMC ? pc.outputs().make<std::vector<o2::MCCompLabel>>(Output{"ITS", "TRACKSMCTR", 0, Lifetime::Timeframe}) : dummyMCLabTracks;
-  auto& allVerticesLabels = mSpecConfig.processMC ? pc.outputs().make<std::vector<o2::MCCompLabel>>(Output{"ITS", "VERTICESMCTR", 0, Lifetime::Timeframe}) : dummyMCLabVerts;
+  auto& allTrackLabels = mSpecConfig.processMC ? pc.outputs().make<std::vector<o2::MCCompLabel>>(Output{"ITS", "TRACKSMCTR", 0}) : dummyMCLabTracks;
+  auto& allVerticesLabels = mSpecConfig.processMC ? pc.outputs().make<std::vector<o2::MCCompLabel>>(Output{"ITS", "VERTICESMCTR", 0}) : dummyMCLabVerts;
 
   std::uint32_t roFrame = 0;
 
@@ -184,6 +184,7 @@ int GPURecoWorkflowSpec::runITSTracking(o2::framework::ProcessingContext& pc)
   pattIt = patterns.begin();
   std::vector<int> savedROF;
   auto logger = [&](std::string s) { LOG(info) << s; };
+  auto fatalLogger = [&](std::string s) { LOG(fatal) << s; };
   auto errorLogger = [&](std::string s) { LOG(error) << s; };
 
   o2::its::FastMultEst multEst; // mult estimator
@@ -252,7 +253,11 @@ int GPURecoWorkflowSpec::runITSTracking(o2::framework::ProcessingContext& pc)
 
     mITSTimeFrame->setMultiplicityCutMask(processingMask);
     // Run CA tracker
-    mITSTracker->clustersToTracksHybrid(logger, errorLogger);
+    if (!mSpecConfig.itsTrackingMode) {
+      mITSTracker->clustersToTracksHybrid(logger, errorLogger);
+    } else {
+      mITSTracker->clustersToTracksHybrid(logger, fatalLogger);
+    }
     size_t totTracks{mITSTimeFrame->getNumberOfTracks()}, totClusIDs{mITSTimeFrame->getNumberOfUsedClusters()};
     allTracks.reserve(totTracks);
     allClusIdx.reserve(totClusIDs);
@@ -303,7 +308,6 @@ int GPURecoWorkflowSpec::runITSTracking(o2::framework::ProcessingContext& pc)
 
 void GPURecoWorkflowSpec::initFunctionITS(InitContext& ic)
 {
-  std::transform(mITSMode.begin(), mITSMode.end(), mITSMode.begin(), [](unsigned char c) { return std::tolower(c); });
   o2::its::VertexerTraits* vtxTraits = nullptr;
   o2::its::TrackerTraits* trkTraits = nullptr;
   mGPUReco->GetITSTraits(trkTraits, vtxTraits, mITSTimeFrame);
@@ -315,11 +319,13 @@ void GPURecoWorkflowSpec::initFunctionITS(InitContext& ic)
   mITSCosmicsProcessing = false;
   std::vector<o2::its::TrackingParameters> trackParams;
 
-  if (mITSMode == "async") {
+  if (mSpecConfig.itsTrackingMode == 1) {
     trackParams.resize(3);
     for (auto& param : trackParams) {
       param.ZBins = 64;
       param.PhiBins = 32;
+      param.CellsPerClusterLimit = 1.e3f;
+      param.TrackletsPerClusterLimit = 1.e3f;
     }
     trackParams[1].TrackletMinPt = 0.2f;
     trackParams[1].CellDeltaTanLambdaSigma *= 2.;
@@ -327,13 +333,13 @@ void GPURecoWorkflowSpec::initFunctionITS(InitContext& ic)
     trackParams[2].CellDeltaTanLambdaSigma *= 4.;
     trackParams[2].MinTrackLength = 4;
     LOG(info) << "Initializing tracker in async. phase reconstruction with " << trackParams.size() << " passes";
-  } else if (mITSMode == "sync") {
+  } else if (mSpecConfig.itsTrackingMode == 0) {
     trackParams.resize(1);
     trackParams[0].ZBins = 64;
     trackParams[0].PhiBins = 32;
     trackParams[0].MinTrackLength = 4;
     LOG(info) << "Initializing tracker in sync. phase reconstruction with " << trackParams.size() << " passes";
-  } else if (mITSMode == "cosmics") {
+  } else if (mSpecConfig.itsTrackingMode == 2) {
     mITSCosmicsProcessing = true;
     mITSRunVertexer = false;
     trackParams.resize(1);
@@ -347,8 +353,6 @@ void GPURecoWorkflowSpec::initFunctionITS(InitContext& ic)
     trackParams[0].TrackletsPerClusterLimit = 100.;
     trackParams[0].CellsPerClusterLimit = 100.;
     LOG(info) << "Initializing tracker in reconstruction for cosmics with " << trackParams.size() << " passes";
-  } else {
-    throw std::runtime_error(fmt::format("Unsupported ITS tracking mode {:s} ", mITSMode));
   }
 
   for (auto& params : trackParams) {
