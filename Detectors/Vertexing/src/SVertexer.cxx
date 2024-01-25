@@ -599,8 +599,6 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
   (*svDebug) << "V0Tree" 
              //<< "PTrackGID.=" << seedP.gid  << "NTrackGID.=" << seedN.gid 
              << "PTrackMCGID=" << mclabelP << "NTrackMCGID=" << mclabelN
-             << "PTrackMCEventID=" << mclabelP.getEventID() << "NTrackMCEventID=" << mclabelN.getEventID()
-             << "PTrackMCID=" << mclabelP.getTrackID() << "NTrackMCID=" << mclabelN.getTrackID()
              << "\n";
 
   auto& fitterV0 = mFitterV0[ithread];
@@ -861,8 +859,6 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
   (*svDebug) << "V0TreeAfterCut" 
              //<< "PTrackGID=" << seedP.gid  << "NTrackGID=" << seedN.gid 
              << "PTrackMCGID=" << mclabelP << "NTrackMCGID=" << mclabelN
-             << "PTrackMCEventID=" << mclabelP.getEventID() << "NTrackMCEventID=" << mclabelN.getEventID()
-             << "PTrackMCID=" << mclabelP.getTrackID() << "NTrackMCID=" << mclabelN.getTrackID()
              << "V0R=" << rv0 << "V0DrP=" << drv0P << "V0DrN=" << drv0N << "V0Pt=" << ptV0 << "V0TgLambda=" << pV0[2] * pV0[2] / pt2V0
              << "V0Dca=" << std::sqrt(dca2) << "V0CosXY=" << cosPAXY << "V0CosPA=" << bestCosPA
              << "V0LambdaMass=" << mV0Hyps[2].calcMass(p2Pos, p2Neg, p2V0) << "V0AntiLambdaMass=" << mV0Hyps[3].calcMass(p2Pos, p2Neg, p2V0)
@@ -1144,8 +1140,6 @@ int SVertexer::check3bodyDecays(const o2::globaltracking::RecoContainer& recoDat
     (*svDebug) << "VtxTree" 
                //<< "Track0GID.=" << v0Idx.getProngID(0)  << "Track1GID.=" << v0Idx.getProngID(1) << "Track2GID.=" << bach.gid
                << "Track0MCGID=" << mclabel0 << "Track1MCGID=" << mclabel1 << "Track2MCGID.=" << mclabel2
-               << "Track0MCEventID=" << mclabel0.getEventID() << "Track1MCEventID=" << mclabel1.getEventID() << "Track2MCEventID=" << mclabel2.getEventID()
-               << "Track0MCID=" << mclabel0.getTrackID() << "Track1MCID=" << mclabel1.getTrackID() << "Track2MCID=" << mclabel2.getTrackID()
                << "\n";
 
     int n3bodyVtx = fitter3body.process(v0.getProng(0), v0.getProng(1), bach);
@@ -1237,8 +1231,6 @@ int SVertexer::check3bodyDecays(const o2::globaltracking::RecoContainer& recoDat
     (*svDebug) << "VtxTreeAfterCut" 
                //<< "Track0GID.=" << v0Idx.getProngID(0)  << "Track1GID.=" << v0Idx.getProngID(1) << "Track2GID.=" << bach.gid
                << "Track0MCGID=" << mclabel0 << "Track1MCGID=" << mclabel1 << "Track2MCGID=" << mclabel2
-               << "Track0MCEventID=" << mclabel0.getEventID() << "Track1MCEventID=" << mclabel1.getEventID() << "Track2MCEventID=" << mclabel2.getEventID()
-               << "Track0MCID=" << mclabel0.getTrackID() << "Track1MCID=" << mclabel1.getTrackID() << "Track2MCID=" << mclabel2.getTrackID()
                << "VtxBachR=" << bach.minR << "VtxDrBach=" << drvtxBach << "VtxPt=" << pt3B << "VtxDiffR=" << std::abs(rv0  - std::sqrt(r2vertex)) << "VtxR=" << std::sqrt(r2vertex)
                << "VtxTgLambda=" << p3B[2] * p3B[2] / pt2candidate << "VtxCosPA=" << bestCosPA << "VtxDcaY=" << dca.getY() << "VtxDcaZ=" << dca.getZ()
                << "VtxH3LMass=" << m3bodyHyps[0].calcMass(sqP0, sqP1, sqP2, p2candidate) << "VtxAntiH3LMass=" << m3bodyHyps[1].calcMass(sqP0, sqP1, sqP2, p2candidate)
