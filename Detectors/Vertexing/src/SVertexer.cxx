@@ -767,7 +767,7 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
                              (!mSVParams->checkV0Hypothesis || good3bodyV0Hyp) &&
                              (pt2V0 > 0.5) &&
                              (!mSVParams->mSkipTPCOnly3Body || !isTPConly);
-  if (!debugFor3BodyDecays)
+  if (debugFor3BodyDecays)
     checkFor3BodyDecays = true;       // for debug
   bool rejectAfter3BodyCheck = false; // To reject v0s which can be 3-body decay candidates but not cascade or v0
   bool checkForCascade = mEnableCascades &&
@@ -865,14 +865,14 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
   // check 3 body decays
   if (checkFor3BodyDecays) {
 
-  // 3body debug
-  (*svDebug) << "V0TreeAfterCut"
-             //<< "PTrackGID=" << seedP.gid  << "NTrackGID=" << seedN.gid
-             << "PTrackMCGID=" << mclabelP << "NTrackMCGID=" << mclabelN
-             << "V0R=" << rv0 << "V0DrP=" << drv0P << "V0DrN=" << drv0N << "V0Pt=" << ptV0 << "V0TgLambda=" << pV0[2] * pV0[2] / pt2V0
-             << "V0Dca=" << std::sqrt(dca2) << "V0CosXY=" << cosPAXY << "V0CosPA=" << bestCosPA
-             << "V0LambdaMass=" << mV0Hyps[2].calcMass(p2Pos, p2Neg, p2V0) << "V0AntiLambdaMass=" << mV0Hyps[3].calcMass(p2Pos, p2Neg, p2V0)
-             << "\n";
+    // 3body debug
+    (*svDebug) << "V0TreeAfterCut"
+               //<< "PTrackGID=" << seedP.gid  << "NTrackGID=" << seedN.gid
+               << "PTrackMCGID=" << mclabelP << "NTrackMCGID=" << mclabelN
+               << "V0R=" << rv0 << "V0DrP=" << drv0P << "V0DrN=" << drv0N << "V0Pt=" << ptV0 << "V0TgLambda=" << pV0[2] * pV0[2] / pt2V0
+               << "V0Dca=" << std::sqrt(dca2) << "V0CosXY=" << cosPAXY << "V0CosPA=" << bestCosPA
+               << "V0LambdaMass=" << mV0Hyps[2].calcMass(p2Pos, p2Neg, p2V0) << "V0AntiLambdaMass=" << mV0Hyps[3].calcMass(p2Pos, p2Neg, p2V0)
+               << "\n";
 
     int n3bodyDecays = 0;
     // n3bodyDecays += check3bodyDecays(v0Idxnew, v0new, rv0, pV0, p2V0, iN, NEG, vlist, ithread);
