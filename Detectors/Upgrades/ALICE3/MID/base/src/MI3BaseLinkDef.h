@@ -9,22 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file GPUTPCClusterFinderKernels.h
-/// \author David Rohr
+#ifdef __CLING__
 
-#ifndef O2_GPU_GPUTPCCLUSTERFINDERKERNEL_H
-#define O2_GPU_GPUTPCCLUSTERFINDERKERNEL_H
+#pragma link off all globals;
+#pragma link off all classes;
+#pragma link off all functions;
 
-#include "clusterFinderDefs.h"
-#include "GPUTPCCFChargeMapFiller.h"
-#include "GPUTPCCFPeakFinder.h"
-#include "GPUTPCCFNoiseSuppression.h"
-#include "GPUTPCCFDeconvolution.h"
-#include "GPUTPCCFStreamCompaction.h"
-#include "GPUTPCCFClusterizer.h"
-#include "GPUTPCCFMCLabelFlattener.h"
-#include "GPUTPCCFCheckPadBaseline.h"
-#include "GPUTPCCFDecodeZS.h"
-#include "GPUTPCCFGather.h"
+#pragma link C++ class o2::mi3::GeometryTGeo +
+#pragma link C++ class o2::mi3::MIDBaseParam + ;
+#pragma link C++ class o2::conf::ConfigurableParamHelper < o2::mi3::MIDBaseParam> + ;
 
 #endif

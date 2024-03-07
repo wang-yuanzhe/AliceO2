@@ -15,9 +15,7 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class o2::its3::CompCluster + ;
-#pragma link C++ class o2::its3::CompClusterExt + ;
-#pragma link C++ class std::vector < o2::its3::CompCluster> + ;
-#pragma link C++ class std::vector < o2::its3::CompClusterExt> + ;
+#pragma link C++ class o2::mi3::Detector + ;
+#pragma link C++ class o2::base::DetImpl < o2::mi3::Detector> + ;
 
 #endif

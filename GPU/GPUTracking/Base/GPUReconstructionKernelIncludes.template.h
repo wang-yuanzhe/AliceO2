@@ -9,5 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "ITS3Base/SuperAlpideParams.h"
-O2ParamImpl(o2::its3::SuperAlpideParams);
+/// \file GPUReconstructionKernelIncludes.h
+/// \author David Rohr
+
+// clang-format off
+$<JOIN:$<LIST:TRANSFORM,$<LIST:TRANSFORM,$<LIST:REMOVE_DUPLICATES,$<TARGET_PROPERTY:O2_GPU_KERNELS,O2_GPU_KERNEL_INCLUDES>>,APPEND,.h">,PREPEND,#include ">,
+>
+// clang-format on
