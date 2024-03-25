@@ -631,6 +631,7 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
     fitterV0.setMaxDZIni(mSVParams->mTPCTrackMaxDZIni);
     fitterV0.setMaxDXYIni(mSVParams->mTPCTrackMaxDXYIni);
     fitterV0.setMaxChi2(mSVParams->mTPCTrackMaxChi2);
+    fitterV0.setCollinear(true);
   }
 
   auto mclabelP = recoData.getTrackMCLabel(seedP.gid);
@@ -647,7 +648,9 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
     fitterV0.setMaxDZIni(mSVParams->maxDZIni);
     fitterV0.setMaxDXYIni(mSVParams->maxDXYIni);
     fitterV0.setMaxChi2(mSVParams->maxChi2);
+    fitterV0.setCollinear(false);
   }
+
   if (nCand == 0) { // discard this pair
     LOG(debug) << "RejDCAFitter";
     return false;
@@ -657,6 +660,7 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
   // check closeness to the beam-line
   float dxv0 = v0XYZ[0] - mMeanVertex.getX(), dyv0 = v0XYZ[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
   if (r2v0 < mMinR2ToMeanVertex) {
+    LOG(debug) << "RejMinR2ToMeanVertex";
     if (!debugFor3BodyDecays)
       return false;
   }
@@ -910,6 +914,7 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
     }
     if (photonOnly) {
       mV0sIdxTmp[ithread].back().setPhotonOnly();
+      mV0sIdxTmp[ithread].back().setCollinear();
     }
 
     if (mSVParams->createFullV0s) {
