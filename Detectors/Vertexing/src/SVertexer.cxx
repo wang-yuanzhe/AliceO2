@@ -298,6 +298,10 @@ void SVertexer::updateTimeDependentParams()
 
   m3bodyHyps[Hyp3body::H3L3body].set(PID::HyperTriton, PID::Proton, PID::Pion, PID::Deuteron, mSVParams->pidCutsH3L3body, bz);
   m3bodyHyps[Hyp3body::AntiH3L3body].set(PID::HyperTriton, PID::Pion, PID::Proton, PID::Deuteron, mSVParams->pidCutsH3L3body, bz);
+  m3bodyHyps[Hyp3body::H4L3body].set(PID::Hyperhydrog4, PID::Proton, PID::Pion, PID::Triton, mSVParams->pidCutsH4L3body, bz);
+  m3bodyHyps[Hyp3body::AntiH4L3body].set(PID::Hyperhydrog4, PID::Pion, PID::Proton, PID::Triton, mSVParams->pidCutsH4L3body, bz);
+  m3bodyHyps[Hyp3body::He4L3body].set(PID::HyperHelium4, PID::Proton, PID::Pion, PID::Helium3, mSVParams->pidCutsHe4L3body, bz);
+  m3bodyHyps[Hyp3body::AntiHe4L3body].set(PID::HyperHelium4, PID::Pion, PID::Proton, PID::Helium3, mSVParams->pidCutsHe4L3body, bz);
 
   for (auto& ft : mFitterV0) {
     ft.setBz(bz);
