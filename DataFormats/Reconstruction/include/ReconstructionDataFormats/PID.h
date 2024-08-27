@@ -73,12 +73,12 @@ GPUconstexpr() const float sMasses2Z[NIDsTot] = ///< defined particle masses / Z
    o2cp::MassProton, o2cp::MassDeuteron,
    o2cp::MassTriton, o2cp::MassHelium3 / 2.,
    o2cp::MassAlpha / 2.,
-   0, 0, 0, 0, o2cp::MassHyperTriton, o2cp::MassHyperhydrog4, o2cp::MassHyperHelium4,
+   0, 0, 0, 0, o2cp::MassHyperTriton, o2cp::MassHyperhydrog4, o2cp::MassHyperHelium4 / 2.,
    o2cp::MassXiMinus, o2cp::MassOmegaMinus};
 
 GPUconstexpr() const int sCharges[NIDsTot] = ///< defined particle charges
   {1, 1, 1, 1, 1, 1, 1, 2, 2,
-   0, 0, 0, 0, 1, 1, 1,
+   0, 0, 0, 0, 1, 1, 2,
    1, 1};
 } // namespace pid_constants
 
