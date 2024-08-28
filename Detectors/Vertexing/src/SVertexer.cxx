@@ -1130,7 +1130,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     float pt3B = std::sqrt(pt2candidate);
 
     bool goodHyp = false;
-    for (int ipid = 0; ipid < 2; ipid++) { // TODO: expand this loop to cover all the 3body cases if (m3bodyHyps[ipid].check(sqP0, sqP1, sqP2, sqPtot, pt3B))
+    for (int ipid = 0; ipid < Hyp3body::AntiH4L3body + 1; ipid++) {
       if (m3bodyHyps[ipid].check(sqP0, sqP1, sqP2, p2candidate, pt3B)) {
         goodHyp = true;
         break;
@@ -1139,7 +1139,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     if (!goodHyp) {
       continue;
     }
-    Decay3Body candidate3B(PID::HyperTriton, vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), tr0, tr1, tr2);
+    Decay3Body candidate3B(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), tr0, tr1, tr2);
     o2::track::TrackParCov trc = candidate3B;
     o2::dataformats::DCA dca;
     if (!trc.propagateToDCA(decay3bodyPv, fitter3body.getBz(), &dca, 5.) ||
