@@ -1096,52 +1096,59 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     tr0.getPxPyPzGlo(p0);
     tr1.getPxPyPzGlo(p1);
     tr2.getPxPyPzGlo(p2);
-    std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
-
-    float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
-    if (pt2candidate < mMinPt23Body) { // pt cut
-      continue;
+    for (int i = 0; i < 3; i++) {
+      p0[i] /= tr0.getAbsCharge();
+      p1[i] /= tr1.getAbsCharge();
+      p2[i] /= tr2.getAbsCharge();
     }
-    if (p3B[2] * p3B[2] / pt2candidate > mMaxTgl23Body) { // tgLambda cut
-      continue;
-    }
-
-    // compute primary vertex and cosPA of the 3-body decay
-    auto bestCosPA = mSVParams->minCosPA3body;
-    auto decay3bodyVtxID = -1;
-
-    for (int iv = decay3bodyVlist.getMin(); iv <= decay3bodyVlist.getMax(); iv++) {
-      const auto& pv = mPVertices[iv];
-      // check cos of pointing angle
-      float dx = vertexXYZ[0] - pv.getX(), dy = vertexXYZ[1] - pv.getY(), dz = vertexXYZ[2] - pv.getZ(), prodXYZ3body = dx * p3B[0] + dy * p3B[1] + dz * p3B[2];
-      float cosPA = prodXYZ3body / std::sqrt((dx * dx + dy * dy + dz * dz) * p2candidate);
-      if (cosPA < bestCosPA) {
-        LOG(debug) << "Rej. cosPA: " << cosPA;
-        continue;
-      }
-      decay3bodyVtxID = iv;
-      bestCosPA = cosPA;
-    }
-    if (decay3bodyVtxID == -1) {
-      LOG(debug) << "3-body decay not compatible with any vertex";
-      continue;
-    }
-
-    const auto& decay3bodyPv = mPVertices[decay3bodyVtxID];
-    float sqP0 = p0[0] * p0[0] + p0[1] * p0[1] + p0[2] * p0[2], sqP1 = p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2], sqP2 = p2[0] * p2[0] + p2[1] * p2[1] + p2[2] * p2[2];
-    float pt3B = std::sqrt(pt2candidate);
 
     bool goodHyp = false;
+    o2::track::PID pidHyp = o2::track::PID::Electron; // Update if goodHyp is true
+    auto decay3bodyVtxID = -1;
+    auto vtxCosPA = -1;
+
+    std::array<float, 3> p3B = {0, 0, 0}; // Update during the check of invariant mass 
     for (int ipid = 0; ipid < NHyp3body; ipid++) {
-      if (m3bodyHyps[ipid].check(sqP0, sqP1, sqP2, p2candidate, pt3B)) {
+      if (m3bodyHyps[ipid].check(p0, p1, p2, p3B)) {
+        float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
+        if (pt2candidate < mMinPt23Body) { // pt cut
+          continue;
+        }
+        if (p3B[2] * p3B[2] / pt2candidate > mMaxTgl23Body) { // tgLambda cut
+          continue;
+        }
+
+        // compute primary vertex and cosPA of the 3-body decay
+        auto bestCosPA = mSVParams->minCosPA3body;
+        for (int iv = decay3bodyVlist.getMin(); iv <= decay3bodyVlist.getMax(); iv++) {
+          const auto& pv = mPVertices[iv];
+          // check cos of pointing angle
+          float dx = vertexXYZ[0] - pv.getX(), dy = vertexXYZ[1] - pv.getY(), dz = vertexXYZ[2] - pv.getZ(), prodXYZ3body = dx * p3B[0] + dy * p3B[1] + dz * p3B[2];
+          float cosPA = prodXYZ3body / std::sqrt((dx * dx + dy * dy + dz * dz) * p2candidate);
+          if (cosPA < bestCosPA) {
+            LOG(debug) << "Rej. cosPA: " << cosPA;
+            continue;
+          }
+          decay3bodyVtxID = iv;
+          bestCosPA = cosPA;
+        }
+        if (decay3bodyVtxID == -1) {
+          LOG(debug) << "3-body decay not compatible with any vertex";
+          continue;
+        }
+
         goodHyp = true;
+        pidHyp = m3bodyHyps[ipid].getPIDHyp(); 
+        vtxCosPA = bestCosPA;
         break;
       }
     }
     if (!goodHyp) {
       continue;
     }
-    Decay3Body candidate3B(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), tr0, tr1, tr2);
+
+    const auto& decay3bodyPv = mPVertices[decay3bodyVtxID];
+    Decay3Body candidate3B(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), tr0, tr1, tr2, pidHyp);
     o2::track::TrackParCov trc = candidate3B;
     o2::dataformats::DCA dca;
     if (!trc.propagateToDCA(decay3bodyPv, fitter3body.getBz(), &dca, 5.) ||
@@ -1149,7 +1156,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
       continue;
     }
     if (mSVParams->createFull3Bodies) {
-      candidate3B.setCosPA(bestCosPA);
+      candidate3B.setCosPA(vtxCosPA);
       candidate3B.setDCA(fitter3body.getChi2AtPCACandidate());
       m3bodyTmp[ithread].push_back(candidate3B);
     }

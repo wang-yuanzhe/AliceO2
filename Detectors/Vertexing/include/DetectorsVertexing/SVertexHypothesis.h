@@ -131,10 +131,14 @@ class SVertex3Hypothesis
   void set(PID v0, PID ppos, PID pneg, PID pbach, float sig, float nSig, float margin, float cpt, float bz = 0.f);
   void set(PID v0, PID ppos, PID pneg, PID pbach, const float pars[NPIDParams], float bz = 0.f);
 
+  PID getPIDHyp() const {return mPIDV0;}
   float getMassV0Hyp() const { return PID::getMass(mPIDV0); }
   float getMassPosProng() const { return PID::getMass(mPIDPosProng); }
   float getMassNegProng() const { return PID::getMass(mPIDNegProng); }
   float getMassBachProng() const { return PID::getMass(mPIDBachProng); }
+  float getChargePosProng() const { return PID::getCharge(mPIDPosProng); }
+  float getChargeNegProng() const { return PID::getCharge(mPIDNegProng); }
+  float getChargeBachProng() const { return PID::getCharge(mPIDBachProng); }
 
   float calcMass2(float p2Pos, float p2Neg, float p2Bach, float p2Tot) const
   {
@@ -148,6 +152,17 @@ class SVertex3Hypothesis
   bool check(float p2Pos, float p2Neg, float p2Bach, float p2Tot, float ptV0) const
   { // check if given mass and pt is matching to hypothesis
     return check(calcMass(p2Pos, p2Neg, p2Bach, p2Tot), ptV0);
+  }
+
+  float check(std::array<float, 3> const& ppos, std::array<float, 3> const& pneg, std::array<float, 3> const& p2, std::array<float, 3>& p3B)
+  { // check mass based on hypothesis of charge of bachelor (pos and neg expected to be proton/pion)
+    std::array<float, 3> pbach = {getChargeBachProng() * p2[0], getChargeBachProng() * p2[1], getChargeBachProng() * p2[2]};
+    p3B = {ppos[0] + pneg[0] + pbach[0], ppos[1] + pneg[1] + pbach[1], ppos[2] + pneg[2] + pbach[2]};
+    float p2Pos = ppos[0] * ppos[0] + ppos[1] * ppos[1] + ppos[2] * ppos[2], p2Neg = pneg[0] * pneg[0] + pneg[1] * pneg[1] + pneg[2] * pneg[2], p2Bach = pbach[0] * pbach[0] + pbach[1] * pbach[1] + pbach[2] * pbach[2];
+    float pt2Candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2Candidate = pt2Candidate + p3B[2] * p3B[2];
+    float ptCandidate = std::sqrt(pt2Candidate);
+    float mass = calcMass(p2Pos, p2Neg, p2Bach, p2Candidate);
+    return std::abs(mass - getMassV0Hyp()) < getMargin(ptCandidate);
   }
 
   bool check(float mass, float pt) const
