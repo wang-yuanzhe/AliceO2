@@ -302,6 +302,8 @@ void SVertexer::updateTimeDependentParams()
   m3bodyHyps[Hyp3body::AntiH4L3body].set(PID::Hyperhydrog4, PID::Pion, PID::Proton, PID::Triton, mSVParams->pidCutsH4L3body, bz);
   m3bodyHyps[Hyp3body::He4L3body].set(PID::HyperHelium4, PID::Proton, PID::Pion, PID::Helium3, mSVParams->pidCutsHe4L3body, bz);
   m3bodyHyps[Hyp3body::AntiHe4L3body].set(PID::HyperHelium4, PID::Pion, PID::Proton, PID::Helium3, mSVParams->pidCutsHe4L3body, bz);
+  m3bodyHyps[Hyp3body::He5L3body].set(PID::HyperHelium5, PID::Proton, PID::Pion, PID::Alpha, mSVParams->pidCutsHe4L3body, bz);
+  m3bodyHyps[Hyp3body::AntiHe4L3body].set(PID::HyperHelium5, PID::Pion, PID::Proton, PID::Alpha, mSVParams->pidCutsHe4L3body, bz);
 
   for (auto& ft : mFitterV0) {
     ft.setBz(bz);
@@ -1130,7 +1132,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     float pt3B = std::sqrt(pt2candidate);
 
     bool goodHyp = false;
-    for (int ipid = 0; ipid < Hyp3body::AntiH4L3body + 1; ipid++) {
+    for (int ipid = 0; ipid < NHyp3body; ipid++) {
       if (m3bodyHyps[ipid].check(sqP0, sqP1, sqP2, p2candidate, pt3B)) {
         goodHyp = true;
         break;
