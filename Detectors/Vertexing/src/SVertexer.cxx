@@ -1107,7 +1107,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     auto decay3bodyVtxID = -1;
     auto vtxCosPA = -1;
 
-    std::array<float, 3> p3B = {0, 0, 0}; // Update during the check of invariant mass 
+    std::array<float, 3> p3B = {0, 0, 0}; // Update during the check of invariant mass
     for (int ipid = 0; ipid < NHyp3body; ipid++) {
       if (m3bodyHyps[ipid].check(p0, p1, p2, p3B)) {
         float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
@@ -1138,7 +1138,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
         }
 
         goodHyp = true;
-        pidHyp = m3bodyHyps[ipid].getPIDHyp(); 
+        pidHyp = m3bodyHyps[ipid].getPIDHyp();
         vtxCosPA = bestCosPA;
         break;
       }
