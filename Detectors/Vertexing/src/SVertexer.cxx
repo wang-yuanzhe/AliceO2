@@ -844,6 +844,10 @@ bool SVertexer::checkV0(const o2::globaltracking::RecoContainer& recoData, const
                << "V0R=" << rv0 << "V0DrP=" << drv0P << "V0DrN=" << drv0N << "V0Pt=" << ptV0 << "V0TgLambda=" << pV0[2] * pV0[2] / pt2V0
                << "V0Dca=" << std::sqrt(dca2) << "V0CosXY=" << cosPAXY << "V0CosPA=" << bestCosPA
                << "V0LambdaMass=" << mV0Hyps[2].calcMass(p2Pos, p2Neg, p2V0) << "V0AntiLambdaMass=" << mV0Hyps[3].calcMass(p2Pos, p2Neg, p2V0)
+               << "V0PTrackCharge=" << seedP.getAbsCharge() << "V0NTrackCharge=" << seedN.getAbsCharge()
+               << "V0PTrackPx=" << pP[0] << "V0PTrackPy=" << pP[1] << "V0PTrackPz=" << pP[2]
+               << "V0NTrackPx=" << pN[0] << "V0NTrackPy=" << pN[1] << "V0NTrackPz=" << pN[2]
+               << "V0H3LMass=" << mV0Hyps[4].calcMass(p2Pos, p2Neg, p2V0) << "V0AntiH3LMass=" << mV0Hyps[5].calcMass(p2Pos, p2Neg, p2V0)
                << "\n";
 
     int n3bodyDecays = 0;
