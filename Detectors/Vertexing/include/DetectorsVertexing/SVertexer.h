@@ -235,7 +235,7 @@ class SVertexer
 
   //For Debug
   std::unique_ptr<o2::utils::TreeStreamRedirector> svDebug;
-  bool debugFor3BodyDecays = false;
+  bool debugFor3BodyDecays = true;
 };
 
 } // namespace vertexing
