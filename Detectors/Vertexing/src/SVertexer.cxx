@@ -1107,10 +1107,15 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     auto decay3bodyVtxID = -1;
     auto vtxCosPA = -1;
 
-    std::array<float, 3> p3B = {0, 0, 0}; // Update during the check of invariant mass
+    std::array<float, 3> pbach = {0, 0, 0}, p3B = {0, 0, 0}; // Update during the check of invariant mass
     for (int ipid = 0; ipid < NHyp3body; ipid++) {
-      if (m3bodyHyps[ipid].check(p0, p1, p2, p3B)) {
-        float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
+      // check mass based on hypothesis of charge of bachelor (pos and neg expected to be proton/pion)
+      pbach = {m3bodyHyps[ipid].getChargeBachProng() * p2[0], m3bodyHyps[ipid].getChargeBachProng() * p2[1], m3bodyHyps[ipid].getChargeBachProng() * p2[2]};
+      p3B = {p0[0] + p1[0] + pbach[0], p0[1] + p1[1] + pbach[1], p0[2] + p1[2] + pbach[2]};
+      float sqP0 = p0[0] * p0[0] + p0[1] * p0[1] + p0[2] * p0[2], sqP1 = p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2], sqPBach = pbach[0] * pbach[0] + pbach[1] * pbach[1] + pbach[2] * pbach[2];
+      float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
+      float ptCandidate = std::sqrt(p3B[0] * p3B[0] + p3B[1] * p3B[1]);
+      if (m3bodyHyps[ipid].check(sqP0, sqP1, sqPBach, p2candidate, ptCandidate)) {
         if (pt2candidate < mMinPt23Body) { // pt cut
           continue;
         }

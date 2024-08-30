@@ -149,25 +149,9 @@ class SVertex3Hypothesis
 
   float calcMass(float p2Pos, float p2Neg, float p2Bach, float p2Tot) const { return std::sqrt(calcMass2(p2Pos, p2Neg, p2Bach, p2Tot)); }
 
-  float calcMass(std::array<float, 3> const& ppos, std::array<float, 3> const& pneg, std::array<float, 3> const& pbach, std::array<float, 3> const& p3B)
-  {
-    float p2Pos = ppos[0] * ppos[0] + ppos[1] * ppos[1] + ppos[2] * ppos[2], p2Neg = pneg[0] * pneg[0] + pneg[1] * pneg[1] + pneg[2] * pneg[2], p2Bach = pbach[0] * pbach[0] + pbach[1] * pbach[1] + pbach[2] * pbach[2];
-    float p2Candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1] + p3B[2] * p3B[2];
-    return calcMass(p2Pos, p2Neg, p2Bach, p2Candidate);
-  }
-
   bool check(float p2Pos, float p2Neg, float p2Bach, float p2Tot, float ptV0) const
   { // check if given mass and pt is matching to hypothesis
     return check(calcMass(p2Pos, p2Neg, p2Bach, p2Tot), ptV0);
-  }
-
-  float check(std::array<float, 3> const& ppos, std::array<float, 3> const& pneg, std::array<float, 3> const& p2, std::array<float, 3>& p3B)
-  { // check mass based on hypothesis of charge of bachelor (pos and neg expected to be proton/pion)
-    std::array<float, 3> pbach = {getChargeBachProng() * p2[0], getChargeBachProng() * p2[1], getChargeBachProng() * p2[2]};
-    p3B = {ppos[0] + pneg[0] + pbach[0], ppos[1] + pneg[1] + pbach[1], ppos[2] + pneg[2] + pbach[2]};
-    float mass = calcMass(ppos, pneg, pbach, p3B);
-    float ptCandidate = std::sqrt(p3B[0] * p3B[0] + p3B[1] * p3B[1]);
-    return std::abs(mass - getMassV0Hyp()) < getMargin(ptCandidate);
   }
 
   bool check(float mass, float pt) const
