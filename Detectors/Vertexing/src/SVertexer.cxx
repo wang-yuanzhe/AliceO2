@@ -1198,6 +1198,9 @@ int SVertexer::check3bodyDecays(const o2::globaltracking::RecoContainer& recoDat
       m3bodyTmp[ithread].push_back(candidate3B);
     }
     //for debug
+    float sqP0 = p0[0] * p0[0] + p0[1] * p0[1] + p0[2] * p0[2], sqP1 = p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2], sqPBach = pbach[0] * pbach[0] + pbach[1] * pbach[1] + pbach[2] * pbach[2];
+    float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
+    float ptCandidate = std::sqrt(p3B[0] * p3B[0] + p3B[1] * p3B[1]);
     (*svDebug) << "VtxTreeAfterCut" 
                << "Track0GID=" << v0Idx.getProngID(0)  << "Track1GID=" << v0Idx.getProngID(1) << "Track2GID=" << bach.gid
                << "Track0MCGID=" << mclabel0 << "Track1MCGID=" << mclabel1 << "Track2MCGID" << mclabel2
