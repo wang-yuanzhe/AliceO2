@@ -1096,11 +1096,6 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     tr0.getPxPyPzGlo(p0);
     tr1.getPxPyPzGlo(p1);
     tr2.getPxPyPzGlo(p2);
-    for (int i = 0; i < 3; i++) {
-      p0[i] /= tr0.getAbsCharge();
-      p1[i] /= tr1.getAbsCharge();
-      p2[i] /= tr2.getAbsCharge();
-    }
 
     bool goodHyp = false;
     o2::track::PID pidHyp = o2::track::PID::Electron; // Update if goodHyp is true
@@ -1110,7 +1105,8 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
     std::array<float, 3> pbach = {0, 0, 0}, p3B = {0, 0, 0}; // Update during the check of invariant mass
     for (int ipid = 0; ipid < NHyp3body; ipid++) {
       // check mass based on hypothesis of charge of bachelor (pos and neg expected to be proton/pion)
-      pbach = {m3bodyHyps[ipid].getChargeBachProng() * p2[0], m3bodyHyps[ipid].getChargeBachProng() * p2[1], m3bodyHyps[ipid].getChargeBachProng() * p2[2]};
+      float bachChargeFactor = m3bodyHyps[ipid].getChargeBachProng() / tr2.getAbsCharge();
+      pbach = {bachChargeFactor * p2[0], bachChargeFactor * p2[1], bachChargeFactor * p2[2]};
       p3B = {p0[0] + p1[0] + pbach[0], p0[1] + p1[1] + pbach[1], p0[2] + p1[2] + pbach[2]};
       float sqP0 = p0[0] * p0[0] + p0[1] * p0[1] + p0[2] * p0[2], sqP1 = p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2], sqPBach = pbach[0] * pbach[0] + pbach[1] * pbach[1] + pbach[2] * pbach[2];
       float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
