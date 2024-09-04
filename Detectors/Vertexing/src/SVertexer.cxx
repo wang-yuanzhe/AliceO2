@@ -1115,7 +1115,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
         if (pt2Candidate < mMinPt23Body) { // pt cut
           continue;
         }
-        if (p3B[2] * p3B[2] > pt2Candidate *  mMaxTgl23Body) { // tgLambda cut
+        if (p3B[2] * p3B[2] > pt2Candidate * mMaxTgl23Body) { // tgLambda cut
           continue;
         }
 
