@@ -1109,13 +1109,13 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
       pbach = {bachChargeFactor * p2[0], bachChargeFactor * p2[1], bachChargeFactor * p2[2]};
       p3B = {p0[0] + p1[0] + pbach[0], p0[1] + p1[1] + pbach[1], p0[2] + p1[2] + pbach[2]};
       float sqP0 = p0[0] * p0[0] + p0[1] * p0[1] + p0[2] * p0[2], sqP1 = p1[0] * p1[0] + p1[1] * p1[1] + p1[2] * p1[2], sqPBach = pbach[0] * pbach[0] + pbach[1] * pbach[1] + pbach[2] * pbach[2];
-      float pt2candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2candidate = pt2candidate + p3B[2] * p3B[2];
-      float ptCandidate = std::sqrt(p3B[0] * p3B[0] + p3B[1] * p3B[1]);
-      if (m3bodyHyps[ipid].check(sqP0, sqP1, sqPBach, p2candidate, ptCandidate)) {
-        if (pt2candidate < mMinPt23Body) { // pt cut
+      float pt2Candidate = p3B[0] * p3B[0] + p3B[1] * p3B[1], p2Candidate = pt2Candidate + p3B[2] * p3B[2];
+      float ptCandidate = std::sqrt(pt2Candidate);
+      if (m3bodyHyps[ipid].check(sqP0, sqP1, sqPBach, p2Candidate, ptCandidate)) {
+        if (pt2Candidate < mMinPt23Body) { // pt cut
           continue;
         }
-        if (p3B[2] * p3B[2] / pt2candidate > mMaxTgl23Body) { // tgLambda cut
+        if (p3B[2] * p3B[2] > pt2Candidate *  mMaxTgl23Body) { // tgLambda cut
           continue;
         }
 
@@ -1125,7 +1125,7 @@ int SVertexer::check3bodyDecays(const V0Index& v0Idx, const V0& v0, float rv0, s
           const auto& pv = mPVertices[iv];
           // check cos of pointing angle
           float dx = vertexXYZ[0] - pv.getX(), dy = vertexXYZ[1] - pv.getY(), dz = vertexXYZ[2] - pv.getZ(), prodXYZ3body = dx * p3B[0] + dy * p3B[1] + dz * p3B[2];
-          float cosPA = prodXYZ3body / std::sqrt((dx * dx + dy * dy + dz * dz) * p2candidate);
+          float cosPA = prodXYZ3body / std::sqrt((dx * dx + dy * dy + dz * dz) * p2Candidate);
           if (cosPA < bestCosPA) {
             LOG(debug) << "Rej. cosPA: " << cosPA;
             continue;
