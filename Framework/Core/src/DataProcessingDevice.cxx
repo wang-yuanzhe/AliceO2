@@ -142,7 +142,7 @@ void on_transition_requested_expired(uv_timer_t* handle)
   if (hasOnlyGenerated(spec)) {
     O2_SIGNPOST_EVENT_EMIT_INFO(calibration, cid, "callback", "Grace period for source expired. Exiting.");
   } else {
-    O2_SIGNPOST_EVENT_EMIT_ERROR(calibration, cid, "callback", "Grace period for data / calibration expired. Exiting.");
+    O2_SIGNPOST_EVENT_EMIT_WARN(calibration, cid, "callback", "Grace period for data / calibration expired. Exiting.");
   }
   state.transitionHandling = TransitionHandlingState::Expired;
 }
@@ -1096,7 +1096,7 @@ void DataProcessingDevice::fillContext(DataProcessorContext& context, DeviceCont
   context.balancingInputs = spec.completionPolicy.balanceChannels;
   // This is needed because the internal injected dummy sink should not
   // try to balance inputs unless the rate limiting is requested.
-  if (enableRateLimiting == false && spec.name == "internal-dpl-injected-dummy-sink") {
+  if (enableRateLimiting == false && spec.name.find("internal-dpl-injected-dummy-sink") != std::string::npos) {
     context.balancingInputs = false;
   }
   if (enableRateLimiting) {

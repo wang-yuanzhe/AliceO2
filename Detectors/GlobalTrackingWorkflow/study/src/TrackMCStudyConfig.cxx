@@ -9,30 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifdef __HIPCC__
-#include "hip/hip_runtime.h"
-#else
-#include <cuda.h>
-#endif
+#include "GlobalTrackingStudy/TrackMCStudyConfig.h"
 
-#include "GPUCommonDef.h"
-#include "DCAFitter/DCAFitterN.h"
-
-namespace o2
-{
-namespace vertexing
-{
-GPUg() void __dummy_instance__()
-{
-#ifdef GPUCA_GPUCODE_DEVICE
-#pragma message "Compiling device code"
-#endif
-  DCAFitter2 ft2;
-  DCAFitter3 ft3;
-  o2::track::TrackParCov tr;
-  ft2.process(tr, tr);
-  ft3.process(tr, tr, tr);
-}
-
-} // namespace vertexing
-} // namespace o2
+O2ParamImpl(o2::trackstudy::TrackMCStudyConfig);
